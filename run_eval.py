@@ -35,6 +35,7 @@ def main(
         episodes:int = 10,
         headless: bool = True,
         scene: int = 1,
+        port: int = 8000,
         ):
     # launch omniverse app with arguments (inside function to prevent overriding tyro)
     from isaaclab.app import AppLauncher
@@ -68,13 +69,13 @@ def main(
             instruction = "put banana in the bin"
         case _:
             raise ValueError(f"Scene {scene} not supported")
-        
+
     env_cfg.set_scene(scene)
     env = gym.make("DROID", cfg=env_cfg)
 
     obs, _ = env.reset()
     obs, _ = env.reset() # need second render cycle to get correctly loaded materials
-    client = DroidJointPosClient()
+    client = DroidJointPosClient(remote_port=port)
 
 
     video_dir = Path("runs") / datetime.now().strftime("%Y-%m-%d") / datetime.now().strftime("%H-%M-%S")
