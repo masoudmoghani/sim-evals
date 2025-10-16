@@ -1,9 +1,11 @@
 # Custom
 data/
 runs/
-assets/
+# assets/
 
-
+# Omniverse
+**/*.dmp
+**/.thumbs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

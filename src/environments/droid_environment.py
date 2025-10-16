@@ -1,6 +1,6 @@
 import torch
 import isaaclab.sim as sim_utils
-import isaaclab.envs.mdp as mdp
+
 import numpy as np
 
 from typing import List
@@ -10,6 +10,8 @@ from pxr import Usd, UsdPhysics
 from isaaclab.envs.mdp.actions.actions_cfg import BinaryJointPositionActionCfg
 from isaaclab.envs.mdp.actions.binary_joint_actions import BinaryJointPositionAction
 from isaaclab.envs.mdp.actions.joint_actions import JointAction
+from isaaclab.controllers.differential_ik_cfg import DifferentialIKControllerCfg
+from isaaclab.envs.mdp.actions import DifferentialInverseKinematicsActionCfg
 from isaaclab.utils import configclass, noise
 from isaaclab.assets import AssetBaseCfg, ArticulationCfg, RigidObjectCfg
 from isaaclab.actuators import ImplicitActuatorCfg
@@ -21,10 +23,14 @@ from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg
 from isaaclab.sensors import CameraCfg
+from isaaclab.utils.math import subtract_frame_transforms
 
 from .nvidia_droid import NVIDIA_DROID
 
-DATA_PATH = Path(__file__).parent / "../../assets"
+from . import mdp
+
+DATA_PATH = Path(__file__).resolve().parent / "assets"
+
 
 @configclass
 class SceneCfg(InteractiveSceneCfg):
@@ -139,14 +145,27 @@ class BinaryJointPositionZeroToOneActionCfg(BinaryJointPositionActionCfg):
 
     class_type = BinaryJointPositionZeroToOneAction
 
+
 @configclass
 class ActionCfg:
+
+    # Set actions for joint position control, comment out for teleoperation
     body = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=["panda_joint.*"],
         preserve_order=True,
         use_default_offset=False,
     )
+
+    # # Set actions for teleoperation, comment out for joint position control
+    # arm_action = DifferentialInverseKinematicsActionCfg(
+    #     asset_name="robot",
+    #     joint_names=["panda_joint.*"],
+    #     body_name="panda_link8",
+    #     controller=DifferentialIKControllerCfg(command_type="pose", use_relative_mode=True, ik_method="dls"),
+    #     scale=0.1,
+    #     body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(pos=[0.0, 0.0, 0.0]),
+    # )
 
     finger_joint = BinaryJointPositionZeroToOneActionCfg(
         asset_name="robot",
@@ -155,42 +174,6 @@ class ActionCfg:
         close_command_expr={"finger_joint": np.pi / 4},
     )
 
-def arm_joint_pos(
-    env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-):
-    robot = env.scene[asset_cfg.name]
-    joint_names = [
-        "panda_joint1",
-        "panda_joint2",
-        "panda_joint3",
-        "panda_joint4",
-        "panda_joint5",
-        "panda_joint6",
-        "panda_joint7",
-    ]
-    # get joint inidices
-    joint_indices = [
-        i for i, name in enumerate(robot.data.joint_names) if name in joint_names
-    ]
-    joint_pos = robot.data.joint_pos[0, joint_indices]
-    return joint_pos
-
-
-def gripper_pos(
-    env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-):
-    robot = env.scene[asset_cfg.name]
-    joint_names = ["finger_joint"]
-    joint_indices = [
-        i for i, name in enumerate(robot.data.joint_names) if name in joint_names
-    ]
-    joint_pos = robot.data.joint_pos[0, joint_indices]
-
-    # rescale
-    joint_pos = joint_pos / (np.pi / 4)
-
-    return joint_pos
-
 
 @configclass
 class ObservationCfg:
@@ -198,12 +181,12 @@ class ObservationCfg:
     class PolicyCfg(ObsGroup):
         """Observations for policy."""
 
-        arm_joint_pos = ObsTerm(func=arm_joint_pos)
+        arm_joint_pos = ObsTerm(func=mdp.arm_joint_pos)
         gripper_pos = ObsTerm(
-            func=gripper_pos, noise=noise.GaussianNoiseCfg(std=0.05), clip=(0, 1)
+            func=mdp.gripper_pos, noise=noise.GaussianNoiseCfg(std=0.05), clip=(0, 1)
         )
         external_cam = ObsTerm(
-                func=mdp.observations.image,
+                func=mdp.image,
                 params={
                     "sensor_cfg": SceneEntityCfg("external_cam"),
                     "data_type": "rgb",
@@ -211,7 +194,7 @@ class ObservationCfg:
                     }
                 )
         wrist_cam = ObsTerm(
-                func=mdp.observations.image,
+                func=mdp.image,
                 params={
                     "sensor_cfg": SceneEntityCfg("wrist_cam"),
                     "data_type": "rgb",
@@ -231,6 +214,7 @@ class EventCfg:
     """Configuration for events."""
     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
 
+
 @configclass
 class CommandsCfg:
     """Command terms for the MDP."""
@@ -240,10 +224,18 @@ class CommandsCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
+
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
+
+    object_dropping = DoneTerm(
+        func=mdp.root_height_below_minimum, params={"minimum_height": -0.1, "asset_cfg": SceneEntityCfg("object_1")}
+    )
+
+    success = DoneTerm(func=mdp.task_done)
+
 
 @configclass
 class CurriculumCfg:
@@ -282,5 +274,3 @@ class EnvCfg(ManagerBasedRLEnvCfg):
     
     def set_scene(self, scene_name: str):
         self.scene.dynamic_scene(scene_name)
-
-
