@@ -49,3 +49,42 @@ def gripper_pos(
     joint_pos = joint_pos / (torch.pi / 4)
 
     return joint_pos
+
+
+def object_positions(
+    env: ManagerBasedRLEnv,
+    object_1_cfg: SceneEntityCfg = SceneEntityCfg("object_1"),
+    object_2_cfg: SceneEntityCfg = SceneEntityCfg("object_2"),
+) -> torch.Tensor:
+    """Get the positions of the objects.
+
+    Args:
+        env: The RL environment instance.
+        object_1_cfg: Configuration for object_1 (the object being placed).
+        object_2_cfg: Configuration for object_2 (the target/container object).
+
+    Returns:
+        Tensor containing the positions of the objects.
+    """
+
+    # Get object entities from the scene
+    object_1: RigidObject = env.scene[object_1_cfg.name]
+    object_2: RigidObject = env.scene[object_2_cfg.name]
+
+    # Get positions relative to environment origin
+    object_1_pos = object_1.data.root_pos_w - env.scene.env_origins
+    object_2_pos = object_2.data.root_pos_w - env.scene.env_origins
+
+    print(f"Object 1 position: {object_1_pos}")
+    print(f"Object 2 position: {object_2_pos}")
+
+    # relative positions
+    relative_x = torch.abs(object_1_pos[:, 0] - object_2_pos[:, 0])
+    relative_y = torch.abs(object_1_pos[:, 1] - object_2_pos[:, 1])
+    relative_z = object_1_pos[:, 2] - object_2_pos[:, 2]
+
+    print(f"Relative x: {relative_x}")
+    print(f"Relative y: {relative_y}")
+    print(f"Relative z: {relative_z}")
+
+    return torch.cat((object_1_pos, object_2_pos), dim=1)

@@ -54,6 +54,29 @@ def task_done(
     Returns:
         Boolean tensor indicating which environments have completed the task.
     """
+
+    # Access the current scene name
+    scene_name = env.cfg.scene_name
+
+    # Modify the termination condition based on the scene name
+    if scene_name == "1":
+        max_relative_x = 0.03
+        max_relative_y = 0.03
+        min_relative_z = -0.01
+        max_relative_z = 0.03
+    elif scene_name == "2":
+        max_relative_x = 0.015
+        max_relative_y = 0.015
+        min_relative_z = -0.01
+        max_relative_z = 0.08
+    elif scene_name == "3":
+        max_relative_x = 0.055
+        max_relative_y = 0.055
+        min_relative_z = -0.075
+        max_relative_z = 0.01
+    else:
+        raise ValueError(f"Invalid scene name: {scene_name}")
+
     # Get object entities from the scene
     robot = env.scene[robot_cfg.name]
     object_1: RigidObject = env.scene[object_1_cfg.name]

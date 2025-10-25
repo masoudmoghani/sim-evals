@@ -202,6 +202,9 @@ class ObservationCfg:
                     }
                 )
 
+        # uncomment this to print object positions on the terminal
+        # object_positions = ObsTerm(func=mdp.object_positions)
+
         def __post_init__(self) -> None:
             self.enable_corruption = False
             self.concatenate_terms = False
@@ -274,3 +277,4 @@ class EnvCfg(ManagerBasedRLEnvCfg):
     
     def set_scene(self, scene_name: str):
         self.scene.dynamic_scene(scene_name)
+        self.scene_name = scene_name
