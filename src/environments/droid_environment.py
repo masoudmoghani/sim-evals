@@ -231,11 +231,11 @@ class RewardsCfg:
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
-    time_out = DoneTerm(func=mdp.time_out, time_out=True)
+    # time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
-    object_dropping = DoneTerm(
-        func=mdp.root_height_below_minimum, params={"minimum_height": -0.1, "asset_cfg": SceneEntityCfg("object_1")}
-    )
+    # object_dropping = DoneTerm(
+    #     func=mdp.root_height_below_minimum, params={"minimum_height": -0.1, "asset_cfg": SceneEntityCfg("object_1")}
+    # )
 
     success = DoneTerm(func=mdp.task_done)
 

@@ -59,17 +59,17 @@ def task_done(
     scene_name = env.cfg.scene_name
 
     # Modify the termination condition based on the scene name
-    if scene_name == "1":
+    if scene_name == 1:
         max_relative_x = 0.03
         max_relative_y = 0.03
         min_relative_z = -0.01
         max_relative_z = 0.03
-    elif scene_name == "2":
-        max_relative_x = 0.015
-        max_relative_y = 0.015
+    elif scene_name == 2:
+        max_relative_x = 0.01
+        max_relative_y = 0.01
         min_relative_z = -0.01
-        max_relative_z = 0.08
-    elif scene_name == "3":
+        max_relative_z = 0.085
+    elif scene_name == 3:
         max_relative_x = 0.055
         max_relative_y = 0.055
         min_relative_z = -0.075
