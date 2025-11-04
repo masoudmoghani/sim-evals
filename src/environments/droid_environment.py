@@ -25,7 +25,7 @@ from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg
 from isaaclab.sensors import CameraCfg
 from isaaclab.utils.math import subtract_frame_transforms
 
-from .nvidia_droid import NVIDIA_DROID
+from .robot_droid import ROBOT_DROID
 
 from . import mdp
 
@@ -42,7 +42,7 @@ class SceneCfg(InteractiveSceneCfg):
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, -0.6, 0.7)),
     )
 
-    robot = NVIDIA_DROID
+    robot = ROBOT_DROID
 
     external_cam = CameraCfg(
         prim_path="{ENV_REGEX_NS}/external_cam",
@@ -60,7 +60,7 @@ class SceneCfg(InteractiveSceneCfg):
         ),
     )
     wrist_cam = CameraCfg(
-        prim_path="{ENV_REGEX_NS}/robot/Gripper/Robotiq_2F_85/base_link/wrist_cam",
+        prim_path="{ENV_REGEX_NS}/robot/robot/Gripper/Robotiq_2F_85/base_link/wrist_cam",
         height=720,
         width=1280,
         data_types=["rgb"],
@@ -146,10 +146,55 @@ class BinaryJointPositionZeroToOneActionCfg(BinaryJointPositionActionCfg):
     class_type = BinaryJointPositionZeroToOneAction
 
 
+class TargetJointPositionStaticAction(JointAction):
+    """Joint action term that applies the processed actions to the articulation's joints as position commands."""
+
+    """The configuration of the action term."""
+
+    def __init__(self, cfg, env: ManagerBasedRLEnv):
+        # initialize the action term
+        super().__init__(cfg, env)
+        # use default joint positions as offset
+        if cfg.use_default_offset:
+            self._offset = self._asset.data.default_joint_pos[
+                :, self._joint_ids
+            ].clone()
+        # self._default_actions = self._asset.data.default_joint_pos[:, self._joint_ids].clone()
+        self._default_actions = self._asset.data.default_joint_pos[
+            :, self._joint_ids
+        ].clone()
+        self._default_actions[:] = torch.tensor(cfg.target)
+
+    @property
+    def action_dim(self) -> int:
+        return 0
+
+    def process_actions(self, actions: torch.Tensor):
+        pass
+
+    def apply_actions(self):
+        # set position targets
+        self._asset.set_joint_position_target(
+            self._default_actions, joint_ids=self._joint_ids
+        )
+
+
+@configclass
+class TargetJointPositionStaticActionCfg(mdp.JointActionCfg):
+    """Configuration for the joint position action term.
+
+    See :class:`JointPositionAction` for more details.
+    """
+
+    target: List[float] = [0.0]
+
+    class_type = TargetJointPositionStaticAction
+    use_default_offset: bool = True
+    preserve_order: bool = True
+
+
 @configclass
 class ActionCfg:
-
-    # Set actions for joint position control, comment out for teleoperation
     body = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=["panda_joint.*"],
@@ -157,21 +202,18 @@ class ActionCfg:
         use_default_offset=False,
     )
 
-    # # Set actions for teleoperation, comment out for joint position control
-    # arm_action = DifferentialInverseKinematicsActionCfg(
-    #     asset_name="robot",
-    #     joint_names=["panda_joint.*"],
-    #     body_name="panda_link8",
-    #     controller=DifferentialIKControllerCfg(command_type="pose", use_relative_mode=True, ik_method="dls"),
-    #     scale=0.1,
-    #     body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(pos=[0.0, 0.0, 0.0]),
-    # )
-
     finger_joint = BinaryJointPositionZeroToOneActionCfg(
         asset_name="robot",
         joint_names=["finger_joint"],
-        open_command_expr = {"finger_joint": 0.0},
+        open_command_expr={"finger_joint": -np.pi / 4},
+        # open_command_expr = {"finger_joint": 0.0},
         close_command_expr={"finger_joint": np.pi / 4},
+    )
+
+    compliant_joints = TargetJointPositionStaticActionCfg(
+        asset_name="robot",
+        joint_names=["left_inner_finger_joint", "right_inner_finger_joint"],
+        target=[-np.pi / 4, np.pi / 4],
     )
 
 
