@@ -252,7 +252,7 @@ class ObservationCfg:
                     }
                 )
 
-        contact = ObsTerm(func=mdp.contact, params={"asset_cfg": SceneEntityCfg("contact")})
+        # contact = ObsTerm(func=mdp.contact, params={"asset_cfg": SceneEntityCfg("contact")})
 
         # uncomment this to print object positions on the terminal
         # object_positions = ObsTerm(func=mdp.object_positions)
@@ -289,7 +289,8 @@ class TerminationsCfg:
     #     func=mdp.root_height_below_minimum, params={"minimum_height": -0.1, "asset_cfg": SceneEntityCfg("object_1")}
     # )
 
-    success = DoneTerm(func=mdp.task_done)
+    # success = DoneTerm(func=mdp.task_done)
+    success = DoneTerm(func=mdp.contact, params={"asset_cfg": SceneEntityCfg("contact"), "threshold": 0.05})
 
 
 @configclass

@@ -110,3 +110,31 @@ def task_done(
     done = torch.logical_and(done, gripper_open)
 
     return done
+
+def contact(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("contact"),
+    threshold: float = 0.05,
+):
+    """Detect contact and return binary indicator.
+    
+    Args:
+        env: The RL environment instance.
+        asset_cfg: Configuration for the contact sensor.
+        threshold: Force threshold to consider as contact (default: 0.1 N).
+    
+    Returns:
+        Binary tensor indicating contact (1 if force > threshold, 0 otherwise).
+    """
+    force_matrix = env.scene[asset_cfg.name].data.force_matrix_w
+    
+    # Compute the norm of force vectors (magnitude of force)
+    force_magnitude = torch.norm(force_matrix, dim=-1)
+    
+    # Check if any force exceeds threshold
+    has_contact = (force_magnitude > threshold).any(dim=-1).float()
+    
+    print(f"Contact detected: {has_contact}")
+    print(f"Max force magnitude: {force_magnitude.max()}")
+    
+    return has_contact
