@@ -115,26 +115,37 @@ def contact(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("contact"),
     threshold: float = 0.05,
-):
-    """Detect contact and return binary indicator.
+) -> torch.Tensor:
+    """Terminate when contact force exceeds threshold.
+    
+    This termination checks if the contact sensor detects any forces above the specified
+    threshold.
     
     Args:
         env: The RL environment instance.
-        asset_cfg: Configuration for the contact sensor.
-        threshold: Force threshold to consider as contact (default: 0.1 N).
+        asset_cfg: Configuration for the contact sensor entity in the scene.
+        threshold: Minimum force magnitude (in Newtons) to register as contact.
     
     Returns:
-        Binary tensor indicating contact (1 if force > threshold, 0 otherwise).
+        Boolean tensor of shape (num_envs,) indicating which environments should terminate
+        due to contact detection.
     """
+    # Get contact force matrix from sensor
+    # Shape: (num_envs, num_bodies, num_filter_bodies, 3) or (num_envs, num_bodies, 3)
     force_matrix = env.scene[asset_cfg.name].data.force_matrix_w
     
-    # Compute the norm of force vectors (magnitude of force)
+    # Compute force magnitude for each contact point
+    # Result shape: (num_envs, num_bodies, [num_filter_bodies])
     force_magnitude = torch.norm(force_matrix, dim=-1)
     
-    # Check if any force exceeds threshold
-    has_contact = (force_magnitude > threshold).any(dim=-1).float()
+    # Find maximum force across all bodies and filter bodies for each environment
+    # Shape: (num_envs,)
+    max_force_per_env = force_magnitude.amax(dim=tuple(range(1, force_magnitude.ndim)))
     
+    # Check if any force exceeds threshold
+    has_contact = max_force_per_env > threshold
+
     print(f"Contact detected: {has_contact}")
-    print(f"Max force magnitude: {force_magnitude.max()}")
+    print(f"Max force magnitude: {max_force_per_env.max()}")
     
     return has_contact
