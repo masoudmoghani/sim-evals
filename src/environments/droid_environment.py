@@ -17,6 +17,7 @@ from isaaclab.assets import AssetBaseCfg, ArticulationCfg, RigidObjectCfg
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.sensors import ContactSensorCfg
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.managers import EventTermCfg as EventTerm
@@ -75,12 +76,19 @@ class SceneCfg(InteractiveSceneCfg):
         ),
     )
 
+    contact = ContactSensorCfg(
+        prim_path="{ENV_REGEX_NS}/scene/object_1",
+        debug_vis=True,
+        filter_prim_paths_expr=["{ENV_REGEX_NS}/scene/object_2"],
+    )
+
     def dynamic_scene(self, scene_name: str):
         environment_path = DATA_PATH / f"scene{scene_name}.usd"
         scene = AssetBaseCfg(
                 prim_path="{ENV_REGEX_NS}/scene",
                 spawn = sim_utils.UsdFileCfg(
                     usd_path=str(environment_path),
+                    activate_contact_sensors=True,
                     ),
                 )
         self.scene = scene
@@ -243,6 +251,8 @@ class ObservationCfg:
                     "normalize": False,
                     }
                 )
+
+        contact = ObsTerm(func=mdp.contact, params={"asset_cfg": SceneEntityCfg("contact")})
 
         # uncomment this to print object positions on the terminal
         # object_positions = ObsTerm(func=mdp.object_positions)

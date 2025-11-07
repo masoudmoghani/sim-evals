@@ -88,3 +88,11 @@ def object_positions(
     print(f"Relative z: {relative_z}")
 
     return torch.cat((object_1_pos, object_2_pos), dim=1)
+
+def contact(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("contact"),
+):
+    contact = env.scene[asset_cfg.name].data.net_forces_w
+    print(f"Contact force: {contact}")
+    return contact
