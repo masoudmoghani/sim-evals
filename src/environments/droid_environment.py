@@ -78,7 +78,7 @@ class SceneCfg(InteractiveSceneCfg):
 
     contact = ContactSensorCfg(
         prim_path="{ENV_REGEX_NS}/scene/object_1",
-        debug_vis=True,
+        debug_vis=False,
         filter_prim_paths_expr=["{ENV_REGEX_NS}/scene/object_2"],
     )
 
