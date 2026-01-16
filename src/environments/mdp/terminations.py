@@ -133,7 +133,7 @@ def contact(
     # Get contact force matrix from sensor
     # Shape: (num_envs, num_bodies, num_filter_bodies, 3) or (num_envs, num_bodies, 3)
     force_matrix = env.scene[asset_cfg.name].data.force_matrix_w
-    
+
     # Compute force magnitude for each contact point
     # Result shape: (num_envs, num_bodies, [num_filter_bodies])
     force_magnitude = torch.norm(force_matrix, dim=-1)
@@ -147,5 +147,17 @@ def contact(
 
     print(f"Contact detected: {has_contact}")
     print(f"Max force magnitude: {max_force_per_env.max()}")
-    
+
     return has_contact
+
+def object_lifted_and_stationary(env: ManagerBasedRLEnv) -> torch.Tensor:
+    if env.cfg.scene_name == 1:
+        termination_threshold = 0.0812
+    elif env.cfg.scene_name == 2:
+        termination_threshold = 0.0858
+    elif env.cfg.scene_name == 3:
+        termination_threshold = 0.0639
+    object_height = env.scene["object_1"].data.root_com_pos_w.reshape(-1)[2].item()
+    object_vel = torch.norm(env.scene["object_1"].data.root_com_vel_w).item()
+    # print(env.episode_length_buf, env.episode_length_buf.item(), termination_threshold, object_height, object_vel)
+    return object_height > termination_threshold + 0.002 and object_vel < 1e-6

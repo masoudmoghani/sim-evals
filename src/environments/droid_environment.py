@@ -290,7 +290,8 @@ class TerminationsCfg:
     # )
 
     # success = DoneTerm(func=mdp.task_done)
-    success = DoneTerm(func=mdp.contact, params={"asset_cfg": SceneEntityCfg("contact"), "threshold": 0.05})
+    # success = DoneTerm(func=mdp.contact, params={"asset_cfg": SceneEntityCfg("contact"), "threshold": 0.05})
+    success = DoneTerm(func=mdp.object_lifted_and_stationary)
 
 
 @configclass
