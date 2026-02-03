@@ -82,6 +82,24 @@ class SceneCfg(InteractiveSceneCfg):
         filter_prim_paths_expr=["{ENV_REGEX_NS}/scene/object_2"],
     )
 
+    contact_obj_container = ContactSensorCfg(
+        prim_path="{ENV_REGEX_NS}/scene/object_1",
+        debug_vis=False,
+        filter_prim_paths_expr=["{ENV_REGEX_NS}/scene/object_2"],
+    )
+
+    contact_obj_table = ContactSensorCfg(
+        prim_path="{ENV_REGEX_NS}/scene/object_1",
+        debug_vis=False,
+        filter_prim_paths_expr=["{ENV_REGEX_NS}/scene/table"],
+    )
+
+    contact_container_table = ContactSensorCfg(
+        prim_path="{ENV_REGEX_NS}/scene/object_2",
+        debug_vis=False,
+        filter_prim_paths_expr=["{ENV_REGEX_NS}/scene/table"],
+    )
+
     def dynamic_scene(self, scene_name: str):
         environment_path = DATA_PATH / f"scene{scene_name}.usd"
         scene = AssetBaseCfg(
@@ -290,8 +308,8 @@ class TerminationsCfg:
     # )
 
     # success = DoneTerm(func=mdp.task_done)
-    # success = DoneTerm(func=mdp.contact, params={"asset_cfg": SceneEntityCfg("contact"), "threshold": 0.05})
-    success = DoneTerm(func=mdp.object_lifted_and_stationary)
+    success = DoneTerm(func=mdp.contact, params={"asset_cfg": SceneEntityCfg("contact"), "threshold": 0.05})
+    # success = DoneTerm(func=mdp.object_lifted_and_stationary)
 
 
 @configclass

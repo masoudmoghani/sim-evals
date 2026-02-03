@@ -130,6 +130,10 @@ def contact(
         Boolean tensor of shape (num_envs,) indicating which environments should terminate
         due to contact detection.
     """
+    print("Force between obj and container, force_matrix_w:", torch.norm(env.scene["contact_obj_container"].data.force_matrix_w, dim=-1).item(), "net_force_w:", torch.norm(env.scene["contact_obj_container"].data.net_forces_w, dim=-1).item())
+    print("Force between obj and table: force_matrix_w", torch.norm(env.scene["contact_obj_table"].data.force_matrix_w, dim=-1).item(), "net_force_w", torch.norm(env.scene["contact_obj_table"].data.net_forces_w, dim=-1).item())
+    print("Force between container and table: force_matrix_w", torch.norm(env.scene["contact_container_table"].data.force_matrix_w, dim=-1).item(), "net_force_w", torch.norm(env.scene["contact_container_table"].data.net_forces_w, dim=-1).item())
+
     # Get contact force matrix from sensor
     # Shape: (num_envs, num_bodies, num_filter_bodies, 3) or (num_envs, num_bodies, 3)
     force_matrix = env.scene[asset_cfg.name].data.force_matrix_w
@@ -145,8 +149,8 @@ def contact(
     # Check if any force exceeds threshold
     has_contact = max_force_per_env > threshold
 
-    print(f"Contact detected: {has_contact}")
-    print(f"Max force magnitude: {max_force_per_env.max()}")
+    # print(f"Contact detected: {has_contact}")
+    # print(f"Max force magnitude: {max_force_per_env.max()}")
 
     return has_contact
 
